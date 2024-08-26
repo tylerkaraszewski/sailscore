@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuickScore</title>
+    <link href="sailscore.css" rel="stylesheet">
+    <script type="text/javascript" src="sailscore.js"></script>
+</head>
+<body>
+    <div id="controls">
+        <span>
+            How many races?  <select id="raceCount"></select>
+        </span>
+        <span>
+            How many discards?  <select id="discardCount"></select>
+        </span>
+        <span>
+            DNF is: 
+            <select id="dnfCount">
+                <option value="registrants" selected="selected">registrants+1</option>
+                <option value="finishers">finishers+1</option>
+            </select>
+        </span>
+        <span>
+            Score races <select id="firstScoredRace"></select> through <select id="lastScoredRace"></select>
+        </span>
+        <span>
+            <input type="button" id="saveButton" value="Save"></input>
+            <input type="file" id="loadButton" accept=".json" style="display: none" /><button type="button" id="loadInnerLabelButton" /><label for="loadButton" id="loadLabel">Load</label></button>
+        </span>
+        <span>
+            <input type="checkbox" id="hideControls" /> <label for="hideControls">Hide scoring entry</label>
+        </span>
+        <div>
+            <div id="errorMessage"></div>
+        </div>
+    </div>
+    <div id="flexWrapper">
+        <div id="entries">
+            Scores: <br/>
+            <div id="raceEntries"></div>
+        </div>
+        <div id="rightControls">
+            Names: <br/>
+            <div id="racerNames"><textarea id="racerNameEntry"></textarea></div>
+            Classes: <br/>
+            <div id="racerClasses"><textarea id="racerClassEntry"></textarea></div>
+            DNF All Races: <br/>
+            <div id="racerDNFAll"><textarea id="racerDNFAllEntry"></textarea></div>
+        </div>
+    </div>
+    <div id="scores"></div>
+</body>
+</html>
