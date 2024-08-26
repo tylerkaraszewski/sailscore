@@ -1,3 +1,4 @@
+//Init
 addEventListener('DOMContentLoaded', init);
 
 function init() {
