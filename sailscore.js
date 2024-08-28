@@ -144,85 +144,64 @@ function load(event) {
 }
 
 function score() {
+    // Clear any existing errors and scores.
     clearError();
     document.getElementById("scores").innerHTML = '';
 
-    // Parse the racer names/numbers for valid entries.
-    const racerNames = parseRacerNames();
-    const classes = parseClasses(racerNames);
-    const races = parseRaces(classes);
+    // Parse the racer names/numbers/classes for valid entries.
+    const classes = parseClasses();
+    const entrants = parseEntrants(classes);
+    const races = parseRaces(classes, entrants);
 
-    // Keep track of racers who finished no races.
-    let finishedNoRaces = parseDNFAll(racerNames);
+    // Every class gets the same number of discards.
+    const discardCount = parseInt(document.getElementById('discardCount').value);
 
-    // Do each entered class separately.
-    for (const className of Object.keys(classes)) {
+    console.log("Parsed classes", classes);
+    console.log("Parsed entrants", entrants);
+    console.log("Parsed races", races);
 
-        // Make these easy to access.
-        const classResults = races[className];
-        const classEntrants = classes[className];
+    // Score each class separately.
+    for (const classInfo of classes) {
+        const classResults = races[classInfo.abbrev];
+        console.log("Class results", classResults);
+        let finalScores = [];
 
-        // Figure out what was entered but did not compete.
-        const didNotCompete = [];
-        for (const entrant of classEntrants) {
-            // If the racer is marked as having finished no races, we'll score themn anyway.
-            if (finishedNoRaces.includes(entrant)) {
-                continue;
-            }
-
-            let participated = false;
-            let firstScored = parseInt(document.getElementById("firstScoredRace").selectedOptions[0].value) - 1;
-            let lastScored = parseInt(document.getElementById("lastScoredRace").selectedOptions[0].value) - 1;
-            for (let raceIndex = firstScored; raceIndex <= lastScored; raceIndex++) {
-                for (const raceFinisher of classResults[raceIndex]) {
-                    if (matchPrefix(entrant, raceFinisher)) {
-                        participated = true;
-                        break;
-                    }
-                }
-            }
-            if (!participated) {
-                didNotCompete.push(entrant);
+        // We want to know how many people are in this class so we can score DNF's correctly.
+        let classEntrantCount = 0;
+        for (const entrant of entrants) {
+            if (entrant.classes.includes(classInfo.abbrev)) {
+                classEntrantCount++;
             }
         }
 
-        // Check for duplicates.
-        for (let i = 0; i < classResults.length; i++) {
-            let duplicates = findDuplicates(classResults[i]);
-            for (dupe of duplicates) {
-                showError("Duplicate finisher in race " + (i + 1) + ", entrant #" + dupe);
-            }
-        }
-
-        discardCount = parseInt(document.getElementById('discardCount').value);
-        finalScores = [];
-        for (const entrant of classEntrants) {
-            // Just skip anyone who didn't race tonight.
-            if (didNotCompete.includes(entrant)) {
+        for (const entrant of entrants) {
+            // Skip if this entrant is not in this class.
+            if (!entrant.classes.includes(classInfo.abbrev)) {
                 continue;
             }
+
             let scores = [];
             let total = 0;
             let firstScored = parseInt(document.getElementById("firstScoredRace").selectedOptions[0].value) - 1;
             let lastScored = parseInt(document.getElementById("lastScoredRace").selectedOptions[0].value) - 1;
             for (let raceIndex = firstScored; raceIndex <= lastScored; raceIndex++) {
-                const finishersPlus1 = document.getElementById('dnfCount').value.match(/finishers/);
                 let finished = false;
                 for (let i = 0; i < classResults[raceIndex].length; i++) {
-                    if (matchPrefix(entrant, classResults[raceIndex][i])) {
+                    const currentFinisher = classResults[raceIndex][i];
+                    if (currentFinisher.number == entrant.number && currentFinisher.name == entrant.name) {
+                        console.log("Racer " + entrant.name + " finished race " + (raceIndex + 1) + " in place " + (i + 1));
                         scores.push(i + 1);
                         total += (i + 1);
                         finished = true;
-                        break;
                     }
                 }
                 if (!finished) {
-                    if (finishersPlus1) {
+                    if (document.getElementById('dnfCount').value.match(/finishers/)) {
                         scores.push(classResults[raceIndex].length + 1);
                         total += (classResults[raceIndex].length + 1);
                     } else {
-                        scores.push(classEntrants.length + 1);
-                        total += (classEntrants.length + 1);
+                        scores.push(classEntrantCount + 1);
+                        total += (classEntrantCount + 1);
                     }
                 }
             }
@@ -252,6 +231,8 @@ function score() {
 
         finalScores.sort(sortScores);
 
+        console.log("Final scores", finalScores);
+
         // Now we can build a table of scores.
         var table = document.createElement("table");
         var caption = document.createElement("caption");
@@ -272,7 +253,7 @@ function score() {
             raceHead.push(h);
         }
 
-        caption.innerHTML = className;
+        caption.innerHTML = classInfo.name;
 
         posHead.innerHTML = "Pos"
         posHead.scope = "col";
@@ -295,11 +276,7 @@ function score() {
         table.appendChild(header);
 
         let pos = 1;
-        for (const sailor of finalScores) {
-            let sailNo = sailor.entrant.match(/^(\d+)\s+(.*)/);
-            let sailNumber = sailNo[1];
-            let sailorName = sailNo[2];
-
+        for (const entrant of finalScores) {
             let row = document.createElement("tr");
 
             let posCell = document.createElement("td");
@@ -308,23 +285,23 @@ function score() {
 
             let name = document.createElement("td");
             name.className = "left";
-            name.innerHTML = sailorName;
+            name.innerHTML = entrant.entrant.name;
             row.appendChild(name);
 
             let sail = document.createElement("td");
-            sail.innerHTML = sailNumber;
+            sail.innerHTML = entrant.entrant.number;
             sail.className = "sailNum";
             row.appendChild(sail);
 
             let offset = parseInt(document.getElementById("firstScoredRace").selectedOptions[0].value) - 1;
-            for (var i = 0; i < sailor.scores.length; i++) {
+            for (var i = 0; i < entrant.scores.length; i++) {
                 let score = document.createElement("td");
-                score.innerHTML = sailor.scores[i];
-                if (sailor.scores[i] >= classResults[i + offset].length + 1) {
+                score.innerHTML = entrant.scores[i];
+                if (entrant.scores[i] >= classResults[i + offset].length + 1) {
                     score.innerHTML += " (DNF)";
                 }
 
-                if (sailor.discardRaces.includes(i)) {
+                if (entrant.discardRaces.includes(i)) {
                     score.innerHTML = '[' + score.innerHTML + ']';
                 }
 
@@ -332,7 +309,7 @@ function score() {
             }
 
             let total = document.createElement("td");
-            total.innerHTML = sailor.total;
+            total.innerHTML = entrant.total;
             row.appendChild(total);
 
             table.appendChild(row);
@@ -367,49 +344,91 @@ function sortScores(a, b) {
     showError("Boats " + a.entrant + " and " + b.entrant + " are tied after A.8.2 tiebreaker. Is that even possible?");
 }
 
-function parseRaces(classes) {
+function parseRaces(classes, racers) {
     const raceResults = {};
-    for (const key in classes) {
-        raceResults[key] = [];
+    // Create an empty set of results for each class.
+    for (const classInfo of classes) {
+        raceResults[classInfo.abbrev] = [];
     }
 
+    // Figure out how many races we'll parse, and parse each race.
     const raceCount = document.querySelectorAll("#raceEntries textarea").length;
     for (var i = 0; i < raceCount; i++) {
-        for (const key in classes) {
-            raceResults[key][i] = [];
+        // First thing for each race is to create an enmpty set of scoring data for each class in the race.
+        for (const classInfo of classes) {
+            raceResults[classInfo.abbrev][i] = [];
         }
 
+        // Now let's get the actual scoring data from the doc.
         const raceText = document.getElementById("raceEntry" + (i + 1)).value;
         const lines = raceText.split(/[\r\n]/);
+        
+        // First, let's make sure that we don't have duplicate/ambiguous entries.
+        let racersMatchingLines = {};
+        const resultsAsRacerObjects = [];
         for (const line of lines) {
-            if (line.match(/^\s*$/)) {
-                // skip empty lines.
+            // Skip empty lines
+            const entry = line.trim();
+            if (!entry) {
                 continue;
             }
 
-            let found = false;
-            const entry = line.trim();
-
-            let matchCount = 0;
-            let lastMatchedName = '';
-            for (const key of Object.keys(classes)) {
-                for (const racer of classes[key]) {
-                    if (matchPrefix(racer, entry)) {
-                        if (matchCount) {
-                            showError('Race ' +  (i + 1) + ' found duplicate matches for "' + entry + '": "' + lastMatchedName + '" and "' + racer + '".');
-                        }
-                        matchCount++;
-                        lastMatchedName = racer;
-                    }
-                }
-                if (matchCount) {
-                    raceResults[key][i].push(entry);
-                    found = true;
-                    break;
+            const matchedRacers = [];
+            for (const racer of racers) {
+                if (racerMatches(racer, line)) {
+                    matchedRacers.push(racer);
                 }
             }
-            if (!found) {
-                showError("Found no class for racer: " + entry + " (race " + (i + 1) + ")");
+
+            // This line doesn't match any racers.
+            if (matchedRacers.length == 0) {
+                showError("Couldn't find a matching racer for entry '" + line + "' in race " + (i + 1));
+            }
+
+            // This line matches too many racers.
+            if (matchedRacers.length > 1) {
+                const matchedRacerStrings = [];
+                for (const r of matchedRacers) {
+                    matchedRacerStrings.push(r.number + ' ' + r.name);
+                }
+                showError("In race " + (i + 1) + ", found ambiguous racer entry '" + line + "', could be: " + matchedRacerStrings.join(', '));
+            }
+
+            // Store an entry for this racer so we can see if the lines are duplicated.
+            if (matchedRacers[0].number + ' ' + matchedRacers[0].name in racersMatchingLines) {
+                racersMatchingLines[matchedRacers[0].number + ' ' + matchedRacers[0].name]++;
+            } else {
+                racersMatchingLines[matchedRacers[0].number + ' ' + matchedRacers[0].name] = 1;
+            }
+
+            // Push the racer object into our actual results.
+            resultsAsRacerObjects.push(matchedRacers[0]);
+        }
+
+        // Every line now matches exactly one racer, but they're not necessarily different racers. Check this.
+        for (const key in racersMatchingLines) {
+            if (racersMatchingLines[key] > 1) {
+                showError("In race " + (i + 1) + " there are multiple results matching entrant '" + key + "'.");
+            }
+        }
+
+        // Ok, now we're happy that each row of the results matches exactly one entrant, and that now two rows match the same entrant.
+        // Let's actually get on to adding the results to the appropriate classes.
+        for (const resultRacer of resultsAsRacerObjects) {
+            for (const racerClass of resultRacer.classes) {
+                // Push this racer to the back of the results for this class, unless there's already an entry for them.
+                // This only happens if the same entrant is in the reults twice, which is an error, but we still want to compute a
+                // valid finishing oruder.
+                let alreadyHasResult = false;
+                for (existingResult of raceResults[racerClass][i]) {
+                    if (existingResult.name == resultRacer.name && existingResult.number == resultRacer.number) {
+                        alreadyHasResult = true;
+                        break;
+                    }
+                }
+                if (!alreadyHasResult) {
+                    raceResults[racerClass][i].push(resultRacer);
+                }
             }
         }
     }
@@ -417,94 +436,104 @@ function parseRaces(classes) {
     return raceResults;
 }
 
-function parseRacerNames() {
+// The format for racer names is expected to be something like:
+// Number FirstName LastName ClassA ClassB ClassC
+// Number is a (perhaps not unique) sail number.
+// Name can have any number of words.
+// The racer can be in any number of classes.
+// If there is only a single class, the class abbreviation may be omitted.
+function parseEntrants(classes) {
+    const classAbbreviationList = [];
+    for (let classInfo of classes) {
+        classAbbreviationList.push(classInfo.abbrev);
+    }
+
     const names = [];
     const lines = document.getElementById('racerNameEntry').value.split(/[\r\n]/);
     for (const line of lines) {
-        if (names.includes(line.trim())) {
-            showError("Duplicate racer: " + line.trim());
+        const trimmedName = line.trim();
+        if (!trimmedName) {
+            continue;
         }
-        if (line.trim() != '') {
-            names.push(line.trim());
+
+        let nameData = trimmedName.split(/\s+/);
+        let racerClassList = [];
+        while (classAbbreviationList.includes(nameData[nameData.length - 1])) {
+            racerClassList.push(nameData.pop());
         }
+        if ((classes.length == 1) && !racerClassList.length) {
+            racerClassList.push(classes[0].abbrev);
+        }
+
+        if (nameData.length == 0) {
+            showError("Couldn't parse racer entry" + line);
+        }
+
+        let racerNumber = nameData.shift();
+        let racerName = nameData.join(' ');
+        names.push({
+            name: racerName,
+            classes: racerClassList,
+            number: racerNumber,
+        })
     }
     return names;
 }
 
-function parseClasses(racerNames) {
-    let racerNamesCopy = [...racerNames];
-    classObject = {};
-    let wildcard = '';
-    let classes = document.getElementById('racerClassEntry').value;
+// Each line here is an Abbreviation followed by a full class name. I.e.:
+// MW Men's Windsurfing.
+// If a single word is entered, it is used as both the abbreviation and full name.
+// If there are no entries, and single class named `All` is created.
+function parseClasses() {
+    const lines = document.getElementById('racerClassEntry').value.split(/[\r\n]/);
 
-    if (classes.match(/^\s*$/s)) {
-        classes = "All *";
-    }
-
-    const lines = classes.split(/[\r\n]/);
+    let classes = [];
     for (const line of lines) {
-        if (line.match(/^\s*$/)) {
-            // skip empty lines.
+        const trimmedClass = line.trim();
+        if (trimmedClass.match(/^\s*$/)) {
             continue;
         }
         
-        let items = line.split(/\s+/);
-        const className = items[0];
-        items.shift();
-        items = items.filter(item => item !== '');
-
-        classObject[className] = [];
-
-        if (!items.length) {
-            showError("Class with no entries: " + className);
+        let words = trimmedClass.split(/\s+/);
+        let abbrev = words.shift();
+        let name = words.join(' ');
+        if (!words.length) {
+            name = abbrev;
         }
 
-        for (const entry of items) {
-            if (entry == '*') {
-                // This one is special, save for last.
-                wildcard = className;
-                break;
-            }
-
-            let matchCount = 0;
-            let lastMatchedName = '';
-            for (racer of racerNamesCopy) {
-                if (matchPrefix(racer, entry)) {
-                    if (matchCount) {
-                        showError('Class "' + className + '" found duplicate entries for "' + entry + '": "' + lastMatchedName + '" and "' + racer + '".');
-                    }
-                    matchCount++;
-                    lastMatchedName = racer;
-                }
-            }
-            if (matchCount) {
-                // We found someone matching this name, add them to the class list.
-                classObject[className].push(lastMatchedName);
-
-                // Remove them from the list, they're no longer in consideration.
-                const index = racerNamesCopy.indexOf(lastMatchedName);
-                racerNamesCopy.splice(index, 1);
-
-            }
-        }
-    }
-    if (wildcard !== '') {
-        // Now we append whatever's left.
-        for (const racer of racerNamesCopy) {
-            classObject[wildcard].push(racer);
-        }
+        classes.push({
+            name,
+            abbrev,
+        });
     }
 
-    if (!Object.keys(classObject).length) {
-        showError("No classes defined.");
+    if (!classes.length) {
+        classes.push({
+            name: 'All',
+            abbrev: 'All',
+        });
     }
 
-    return classObject;
+    return classes;
 }
 
 function matchPrefix(name, prefix) {
     let addSpace = prefix.match(/^[0-9]+$/) ? ' ' : '';
     return name.match(new RegExp('^' + prefix + addSpace));
+}
+
+// `racer` should be an object with the keys:
+// name
+// classes
+// number
+function racerMatches(racer, prefix) {
+    // If the prefix is a number, it must match the racer number exactly.
+    if (parseInt(prefix).toString() == prefix) {
+        return prefix == racer.number;
+    }
+
+    // Otherwise, we match if it's the number followed by part of the name.
+    return (racer.number + ' ' + racer.name).startsWith(prefix);
 }
 
 function parseDNFAll(racerNames) {
@@ -544,22 +573,4 @@ function showError(message) {
 
 function clearError() {
     document.getElementById('errorMessage').innerHTML = '';
-}
-
-// chatgpt helped me:
-function findDuplicates(array) {
-  let duplicates = [];
-  let seen = new Set();
-
-  array.forEach(item => {
-    if (seen.has(item)) {
-      if (!duplicates.includes(item)) {
-        duplicates.push(item);
-      }
-    } else {
-      seen.add(item);
-    }
-  });
-
-  return duplicates;
 }
