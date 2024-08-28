@@ -11,7 +11,6 @@ function init() {
     // If anything else changes, re-score.
     document.getElementById('racerNameEntry').addEventListener('keyup', score, false);
     document.getElementById('racerClassEntry').addEventListener('keyup', score, false);
-    document.getElementById('racerDNFAllEntry').addEventListener('keyup', score, false);
     document.getElementById('discardCount').addEventListener('change', score, false);
     document.getElementById('dnfCount').addEventListener('change', score, false);
 
@@ -99,7 +98,6 @@ function save() {
         races,
         names: document.getElementById('racerNameEntry').value,
         classes: document.getElementById('racerClassEntry').value,
-        racerDNFAllEntry: document.getElementById('racerDNFAllEntry').value,
         discards: document.getElementById('discardCount').selectedOptions[0].value,
         dnfscoring: document.getElementById('dnfCount').selectedOptions[0].value,
 
@@ -125,7 +123,6 @@ function load(event) {
             const json = JSON.parse(e.target.result);
             document.getElementById('racerNameEntry').value = json.names;
             document.getElementById('racerClassEntry').value = json.classes;
-            document.getElementById('racerDNFAllEntry').value = json.racerDNFAllEntry;
             document.getElementById("raceCount").value = json.races.length;
             document.getElementById("discardCount").value = json.discards;
             document.getElementById("dnfCount").value = json.dnfscoring;
@@ -156,14 +153,9 @@ function score() {
     // Every class gets the same number of discards.
     const discardCount = parseInt(document.getElementById('discardCount').value);
 
-    console.log("Parsed classes", classes);
-    console.log("Parsed entrants", entrants);
-    console.log("Parsed races", races);
-
     // Score each class separately.
     for (const classInfo of classes) {
         const classResults = races[classInfo.abbrev];
-        console.log("Class results", classResults);
         let finalScores = [];
 
         // We want to know how many people are in this class so we can score DNF's correctly.
@@ -189,7 +181,6 @@ function score() {
                 for (let i = 0; i < classResults[raceIndex].length; i++) {
                     const currentFinisher = classResults[raceIndex][i];
                     if (currentFinisher.number == entrant.number && currentFinisher.name == entrant.name) {
-                        console.log("Racer " + entrant.name + " finished race " + (raceIndex + 1) + " in place " + (i + 1));
                         scores.push(i + 1);
                         total += (i + 1);
                         finished = true;
@@ -230,8 +221,6 @@ function score() {
         }
 
         finalScores.sort(sortScores);
-
-        console.log("Final scores", finalScores);
 
         // Now we can build a table of scores.
         var table = document.createElement("table");
@@ -383,6 +372,7 @@ function parseRaces(classes, racers) {
             // This line doesn't match any racers.
             if (matchedRacers.length == 0) {
                 showError("Couldn't find a matching racer for entry '" + line + "' in race " + (i + 1));
+                continue;
             }
 
             // This line matches too many racers.
@@ -534,35 +524,6 @@ function racerMatches(racer, prefix) {
 
     // Otherwise, we match if it's the number followed by part of the name.
     return (racer.number + ' ' + racer.name).startsWith(prefix);
-}
-
-function parseDNFAll(racerNames) {
-    let dnf = document.getElementById('racerDNFAllEntry').value;
-    const dnfList = [];
-
-    const lines = dnf.split(/[\r\n]/);
-    for (const line of lines) {
-        let trimmed = line.trim();
-        if (trimmed != '') {
-            let matchCount = 0;
-            let lastMatchedName = '';
-            for (const racer of racerNames) {
-                if (matchPrefix(racer, trimmed)) {
-                    if (matchCount) {
-                        showError('DNF All Races entry "' + trimmed + '" is ambiguous, could be "' + racer + '" or "' + lastMatchedName + '".');
-                    }
-                    matchCount++;
-                    lastMatchedName = racer;
-                }
-            }
-            if (!matchCount) {
-                showError('DNF All Races entry "' + trimmed + '" matched no racers.');
-            }
-            dnfList.push(lastMatchedName);
-        }
-    }
-
-    return dnfList;
 }
 
 function showError(message) {

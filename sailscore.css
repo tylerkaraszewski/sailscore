@@ -41,17 +41,12 @@ textarea {
 
 #racerNameEntry {
     width: 250px;
-    height: 17em;
+    height: 21em;
 }
 
 #racerClassEntry {
     width: 250px;
-    height: 3.5em;
-}
-
-#racerDNFAllEntry {
-    width: 250px;
-    height: 3.5em;
+    height: 7em;
 }
 
 #flexWrapper {
