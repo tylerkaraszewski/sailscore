@@ -1,87 +1,129 @@
-html {
-    font-family: sans-serif;
+@media screen {
+    html {
+        font-family: sans-serif;
+    }
+
+    #raceEntries > div {
+        display: inline-block;
+        min-width: 50px;
+        padding-top: 0.5em;
+    }
+
+    #entries {
+        flex: 1;
+    }
+
+    #controls {
+        padding-bottom: 0.5em;
+        border-bottom: 1px solid black;
+    }
+
+    #controls > span {
+        margin-right: 1em;
+    }
+
+    #rightControls > div {
+        flex: 1;
+        margin-bottom: 1em;
+    }
+
+    #raceEntries textarea {
+        width: 50px;
+        height: 30em;
+    }
+
+    textarea {
+        font-size: 10px;
+    }
+
+    #raceEntries span {
+        font-weight: bold;
+    }
+
+    #racerNameEntry {
+        width: 250px;
+        height: 21em;
+    }
+
+    #racerClassEntry {
+        width: 250px;
+        height: 7em;
+    }
+
+    #flexWrapper {
+        display: flex;
+        padding-top: 0.5em;
+    }
+
+    #errorMessage > div {
+        padding-top: 0.5em;
+        color: red;
+    }
+
+    table {
+        margin-top: 1em;
+        font-family: sans-serif;
+        border-collapse: collapse;
+    }
+
+    td {
+        text-align: right;
+        border: 1px solid gray;
+        padding: 4px 6px;
+        font-size: 14px;
+    }
+
+    .left {
+        text-align: left;
+    }
+
+    .sailNum {
+        background-color: #ccc;
+    }
+
+    caption {
+        font-weight: bold;
+        font-size: 22px;
+        margin: 6px;
+    }
 }
 
-#raceEntries > div {
-    display: inline-block;
-    min-width: 50px;
-    padding-top: 0.5em;
-}
+@media print {
+    html {
+        font-family: sans-serif;
+        font-size: 14pt;
+    }
+    #controls {
+        display: none;
+    }
 
-#entries {
-    flex: 1;
-}
+    #flexWrapper {
+        display: none;
+    }
 
-#controls {
-    padding-bottom: 0.5em;
-    border-bottom: 1px solid black;
-}
+    table {
+        border-collapse: collapse;
+        max-width: 100%;
+    }
 
-#controls > span {
-    margin-right: 1em;
-}
+    caption {
+        margin-top: 1.5em;
+        font-weight: bold;
+    }
 
-#rightControls > div {
-    flex: 1;
-    margin-bottom: 1em;
-}
+    th {
+        font-size: 12pt;
+        white-space: nowrap;
+    }
 
-#raceEntries textarea {
-    width: 50px;
-    height: 30em;
-}
+    td {
+        border: 1px solid black;
+        padding: 0.25em;
+        white-space: nowrap;
+    }
 
-textarea {
-    font-size: 10px;
-}
+    .sailNum {
+        background-color: #ccc;
+    }
 
-#raceEntries span {
-    font-weight: bold;
-}
-
-#racerNameEntry {
-    width: 250px;
-    height: 21em;
-}
-
-#racerClassEntry {
-    width: 250px;
-    height: 7em;
-}
-
-#flexWrapper {
-    display: flex;
-    padding-top: 0.5em;
-}
-
-#errorMessage > div {
-    padding-top: 0.5em;
-    color: red;
-}
-
-table {
-    margin-top: 1em;
-    font-family: sans-serif;
-    border-collapse: collapse;
-}
-
-td {
-    text-align: right;
-    border: 1px solid gray;
-    padding: 4px 6px;
-    font-size: 14px;
-}
-
-.left {
-    text-align: left;
-}
-
-.sailNum {
-    background-color: #ccc;
-}
-
-caption {
-    font-weight: bold;
-    font-size: 22px;
-    margin: 6px;
 }
